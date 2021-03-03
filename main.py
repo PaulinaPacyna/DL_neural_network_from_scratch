@@ -2,6 +2,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from sklearn.datasets import load_iris
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
 
 
 class Layer:
@@ -15,7 +18,10 @@ class Layer:
         self.activation_type = activation
 
     def set_weights(self, W):
-        self.weights = W.reshape(self.weights.shape)
+        self.weights = np.array(W).reshape(self.weights.shape)
+
+    def set_bias(self, b):
+        self.bias = np.array(b).reshape(self.bias.shape)
 
     def activation(self, x):
         if self.activation_type == "sigmoid":
@@ -38,15 +44,21 @@ class Layer:
 
     def delta(self, inputs: np.array, expectation: np.array):
         """Returns column vector of delta values. Each delta value corresponds to one output neuron"""
-        expectation = expectation.reshape((-1, 1))  # column vector
-        inputs = inputs.reshape((-1, 1))  # column vector
+        expectation = np.array(expectation).reshape((-1, 1))  # column vector
+        inputs = np.array(inputs).reshape((-1, 1))  # column vector
         # pairwise multiplication, not matrix multiplication
-        return self.derivative_activation(self.lin_comb(inputs)) * (
+        return self.derivative_activation(self.lin_comb(inputs)).reshape((-1, 1)) * (
             self.output(inputs) - expectation
-        )
+        ).reshape((-1, 1))
 
 
-x = np.array([2, 3, 4])
-L = Layer(3, 2)
-y = L.output(x)
-delta = L.delta(x, np.array([0.3, 0.7]))
+X, y = load_iris(return_X_y=True)
+y = preprocessing.OneHotEncoder().fit_transform(y.reshape((-1, 1))).todense()
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y, test_size=0.33, random_state=42
+)
+L = Layer(4, 3)
+for i in range(X_train.shape[0]):
+    delta = L.delta(X_train[i, :], y_train[i, :])
+    L.set_weights(L.weights - 0.4 * np.matmul(delta, X_train[i, :].reshape((1, -1))))
+    L.set_bias(L.bias - 0.4 * delta)

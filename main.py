@@ -43,8 +43,8 @@ class Layer:
         W = self.weights
         Wx = np.matmul(W, inputs).reshape((-1, 1))  # column vector
         return (Wx + self.bias).reshape((-1, 1))  # column vector
-
-
+    def set_delta(self, delta):
+        self.delta = np.array(delta).reshape((-1,1))
 class Network:
     def __init__(
         self,
@@ -79,28 +79,34 @@ class Network:
             if X.shape[0] != Y.shape[0]:
                 raise ValueError("X and y have different row numbers")
             n_rows = X.shape[0]
-            for n, layer in reversed(list(enumerate(self.layers))):
-                for i in range(n_rows):
-                    x = X[i, :].reshape((1, -1))  # row vector
-                    y = Y[i, :].reshape((1, -1))  # row vector
+            for i in range(n_rows):
+                x = X[i, :].reshape((1, -1))  # row vector
+                y = Y[i, :].reshape((1, -1))  # row vector
+                # going back to front - setting deltas
+                for n, layer in reversed(list(enumerate(self.layers))):
                     if n == len(self.layers) - 1:  # if this is output layer
                         # pairwise multiplication, not matrix multiplication
                         delta = layer.derivative_activation(
                             layer.lin_comb(x)
                         ).reshape((-1, 1)) * (self.fit(x) - y).reshape((-1, 1))
-                        layer.set_weights(
-                            layer.weights
-                            - self.alpha * np.matmul(delta, x.reshape((1, -1)))
-                        )
-                        layer.set_bias(layer.bias - self.alpha * delta)
+                        layer.set_delta(delta)
                     else:  # if this is a hidden layer
                         print(f"I am in hidden {n}")
                         output_delta = np.array(delta).reshape(
                             (-1, 1)
                         )  # # use deltas from n+1 layer to compute this delta
-                        weights = layer.weights
-                        delta = np.matmul(weights, output_delta).reshape(-1, 1)
+                        weights = layer.weights.transpose()
+                        layer.set_delta(np.matmul(weights, output_delta).reshape(-1, 1))
+                # going front to back - updating weights using deltas
 
+                for layer in self.layers:
+                    y = layer.output(x)
+                    layer.set_weights(
+                        layer.weights
+                        - self.alpha * np.matmul(layer.delta, x.reshape((1, -1)))
+                    ) #
+                    layer.set_bias(layer.bias - self.alpha * layer.delta)
+                    x = y # output becomes input for next layer
 
     def fit(self, X):
         def fit_one(x):

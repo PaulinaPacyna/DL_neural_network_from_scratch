@@ -10,12 +10,14 @@ from sklearn.model_selection import train_test_split
 class Layer:
     """One layer of the network, it is output neurons and preceding weights"""
 
-    def __init__(self, n_input: int, n_output: int, activation: str = "sigmoid"):
+    def __init__(self, n_input: int, n_output: int, activation_type: str = "sigmoid"):
         self.weights = np.random.rand(
             n_output, n_input
         )  # matrix of weights. Rows corresponds to output neurons, columns to input neurons
         self.bias = np.random.rand(n_output).reshape((-1, 1))
-        self.activation_type = activation
+        self.activation_type = activation_type
+        self.n_input = n_input
+        self.n_output = n_output
 
     def set_weights(self, W):
         self.weights = np.array(W).reshape(self.weights.shape)
@@ -42,23 +44,84 @@ class Layer:
         Wx = np.matmul(W, inputs).reshape((-1, 1))  # column vector
         return (Wx + self.bias).reshape((-1, 1))  # column vector
 
-    def delta(self, inputs: np.array, expectation: np.array):
-        """Returns column vector of delta values. Each delta value corresponds to one output neuron"""
-        expectation = np.array(expectation).reshape((-1, 1))  # column vector
-        inputs = np.array(inputs).reshape((-1, 1))  # column vector
-        # pairwise multiplication, not matrix multiplication
-        return self.derivative_activation(self.lin_comb(inputs)).reshape((-1, 1)) * (
-            self.output(inputs) - expectation
-        ).reshape((-1, 1))
 
+class Network:
+    def __init__(
+        self,
+        layers: np.array,
+        activation_type="sigmoid",
+        alpha=0.1,
+        batch_size=10,
+        n_epochs=10,
+    ):
+        self.alpha = alpha
+        self.n_epochs = n_epochs
+        self.batch_size = batch_size
+        layers_kwargs = {"activation_type": activation_type}
+        try:
+            if len(layers) < 2:
+                raise ValueError("Network must have at least 2 layers")
+        except TypeError:  # if len(layers) throws error (for example user specified an integer)
+            raise TypeError("Layers must be a list of number of neurons in each layer")
+        self.layers = [
+            Layer(layers[i], layers[i + 1], **layers_kwargs)
+            for i in range(len(layers) - 1)
+        ]
+
+    def train(self, X, Y):
+        for _ in range(self.n_epochs):  # repeat on whole dataset n_epochs times
+            X = np.array(X)
+            Y = np.array(Y)
+            if Y.ndim == 1:
+                Y = Y.reshape(
+                    (-1, 1)
+                )  # if y is an one-dimensional vector - make it a column vector (matrix)
+            if X.shape[0] != Y.shape[0]:
+                raise ValueError("X and y have different row numbers")
+            n_rows = X.shape[0]
+            for n, layer in reversed(list(enumerate(self.layers))):
+                for i in range(n_rows):
+                    x = X[i, :].reshape((1, -1))  # row vector
+                    y = Y[i, :].reshape((1, -1))  # row vector
+                    if n == len(self.layers) - 1:  # if this is output layer
+                        # pairwise multiplication, not matrix multiplication
+                        delta = layer.derivative_activation(
+                            layer.lin_comb(x)
+                        ).reshape((-1, 1)) * (self.fit(x) - y).reshape((-1, 1))
+                    else:  # if this is a hidden layer
+                        print(f"I am in hidden {n}")
+                        output_delta = np.array(delta).reshape(
+                            (-1, 1)
+                        )  # # use deltas from n+1 layer to compute this delta
+                        weights = layer.weights
+                        delta = np.matmul(weights, output_delta).reshape(-1, 1)
+                    layer.set_weights(
+                        layer.weights
+                        - self.alpha * np.matmul(delta, x.reshape((1, -1)))
+                    )
+                    layer.set_bias(layer.bias - self.alpha * delta)
+
+    def fit(self, X):
+        def fit_one(x):
+            y = x
+            for layer in self.layers:
+                y = layer.output(y) # output from previous layer becomes input for next layer
+            return y.reshape((-1,))
+        return np.apply_along_axis(fit_one, axis=1, arr=X)
 
 X, y = load_iris(return_X_y=True)
-y = preprocessing.OneHotEncoder().fit_transform(y.reshape((-1, 1))).todense()
+encoder = preprocessing.OneHotEncoder()
+y = encoder.fit_transform(y.reshape((-1, 1))).todense()
 X_train, X_test, y_train, y_test = train_test_split(
     X, y, test_size=0.33, random_state=42
 )
-L = Layer(4, 3)
-for i in range(X_train.shape[0]):
-    delta = L.delta(X_train[i, :], y_train[i, :])
-    L.set_weights(L.weights - 0.4 * np.matmul(delta, X_train[i, :].reshape((1, -1))))
-    L.set_bias(L.bias - 0.4 * delta)
+N = Network([4, 3], alpha=0.4, n_epochs=40)
+N.train(X_train, y_train)
+pred = N.fit(X_test)
+print(np.argmax(pred, axis=1).reshape((-1,)))
+print(np.argmax(y_test, axis=1).reshape((-1,)))
+print(
+    np.mean(
+        np.argmax(pred, axis=1).reshape((-1)) == np.argmax(y_test, axis=1).reshape((-1))
+    )
+)

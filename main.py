@@ -88,6 +88,11 @@ class Network:
                         delta = layer.derivative_activation(
                             layer.lin_comb(x)
                         ).reshape((-1, 1)) * (self.fit(x) - y).reshape((-1, 1))
+                        layer.set_weights(
+                            layer.weights
+                            - self.alpha * np.matmul(delta, x.reshape((1, -1)))
+                        )
+                        layer.set_bias(layer.bias - self.alpha * delta)
                     else:  # if this is a hidden layer
                         print(f"I am in hidden {n}")
                         output_delta = np.array(delta).reshape(
@@ -95,11 +100,7 @@ class Network:
                         )  # # use deltas from n+1 layer to compute this delta
                         weights = layer.weights
                         delta = np.matmul(weights, output_delta).reshape(-1, 1)
-                    layer.set_weights(
-                        layer.weights
-                        - self.alpha * np.matmul(delta, x.reshape((1, -1)))
-                    )
-                    layer.set_bias(layer.bias - self.alpha * delta)
+
 
     def fit(self, X):
         def fit_one(x):

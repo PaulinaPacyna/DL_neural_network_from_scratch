@@ -149,7 +149,8 @@ print(
     )
 )
 print("----------------XOR--------------------")
-
+# sigmoid do xora to kiepski pomysl - w teorii jest zawsze zbiezne, a w praktyce to na 30 razy raz sie zbieglo
+# internet poleca inne activation function (tanh, relu)  - do zrobienia
 data = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 0], [0, 1, 1]])
 X = data[:, :2]
 y = data[:, 2]

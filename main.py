@@ -10,11 +10,11 @@ from sklearn.model_selection import train_test_split
 class Layer:
     """One layer of the network, it is output neurons and preceding weights"""
 
-    def __init__(self, n_input: int, n_output: int, activation_type: str = "sigmoid"):
-        self.weights = np.random.rand(
-            n_output, n_input
+    def __init__(self, n_input: int, n_output: int, activation_type: str = "sigmoid", init_sigma=1):
+        self.weights = np.random.normal(0,init_sigma,n_output*n_input).reshape((
+            n_output, n_input)
         )  # matrix of weights. Rows corresponds to output neurons, columns to input neurons
-        self.bias = np.random.rand(n_output).reshape((-1, 1))
+        self.bias = np.random.normal(0,init_sigma,n_output).reshape((-1, 1))
         self.activation_type = activation_type
         self.n_input = n_input
         self.n_output = n_output
@@ -31,7 +31,7 @@ class Layer:
 
     def fit(self, inputs: np.array):
         """Returns output (sigma(Wx+b))"""
-        return self.activation(self.lin_comb(inputs))
+        return self.activation(self.lin_comb(np.array(inputs)))
 
     def lin_comb(self, inputs):
         """Returns weights(matrix) * inputs (column) + bias (column)"""
@@ -46,17 +46,18 @@ class Layer:
 
 class Network:
     def __init__(
-            self,
-            layers: np.array,
-            activation_type="sigmoid",
-            alpha=0.1,
-            batch_size=10,
-            n_epochs=10,
+        self,
+        layers: np.array,
+        activation_type="sigmoid",
+        init_sigma =1,
+        alpha=0.1,
+        batch_size=10,
+        n_epochs=10,
     ):
         self.alpha = alpha
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-        layers_kwargs = {"activation_type": activation_type}
+        layers_kwargs = {"activation_type": activation_type, 'init_sigma': init_sigma}
         try:
             if len(layers) < 2:
                 raise ValueError("Network must have at least 2 layers")
@@ -108,9 +109,12 @@ class Network:
                     y = layer.fit(x)
                     layer.set_weights(
                         layer.weights
-                        - self.alpha * np.matmul(layer.delta, x.reshape((1, -1)))
+                        - self.alpha
+                        * np.matmul((layer.delta), x.reshape((1, -1)))
                     )  #
-                    layer.set_bias(layer.bias - self.alpha * layer.delta)
+                    layer.set_bias(
+                        layer.bias - self.alpha * layer.delta
+                    )
                     x = y  # output becomes input for next layer
 
     def fit(self, X):
@@ -125,14 +129,16 @@ class Network:
         return np.apply_along_axis(fit_one, axis=1, arr=X)
 
 
-print('----------------IRIS--------------------')
+print("----------------IRIS--------------------")
 X, y = load_iris(return_X_y=True)
 encoder = preprocessing.OneHotEncoder()
 y = encoder.fit_transform(y.reshape((-1, 1))).todense()
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.33, random_state=42
+    X, y, test_size=0.33
 )
-N = Network([4, 5, 3], alpha=0.4, n_epochs=40)  # best without hidden layers - iris dataset is too small
+N = Network(
+    [4, 5, 3], alpha=0.4, n_epochs=40
+)  # best without hidden layers - iris dataset is too small
 N.train(X_train, y_train)
 pred = N.fit(X_test)
 print(np.argmax(pred, axis=1).reshape((-1,)))
@@ -142,14 +148,16 @@ print(
         np.argmax(pred, axis=1).reshape((-1)) == np.argmax(y_test, axis=1).reshape((-1))
     )
 )
-print('----------------XOR--------------------')
-X = np.array([[1, 1], [1, 0], [0, 0], [0, 1]])
-y = np.array([0,1,0,1])
-encoder = preprocessing.OneHotEncoder()
-y = encoder.fit_transform(y.reshape((-1, 1))).todense()
-N = Network([2, 3, 2], alpha=0.2, n_epochs=100)
+print("----------------XOR--------------------")
+
+data = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 0], [0, 1, 1]])
+X = data[:, :2]
+y = data[:, 2]
+N = Network([2, 2, 1], alpha=.9, n_epochs=100000, init_sigma=7)
 N.train(X, y)
-pred = N.fit(X)
-print(pred)
-print(y)
+pred = N.fit(np.array([[1, 1], [1, 0], [0, 0], [0, 1]]))
+xy= np.mgrid[-1:3.1:0.05, -1:3.1:0.05].reshape(2, -1).T
+plt.scatter(xy[:,0], xy[:,1], c=np.round(N.fit(xy)), s=1)
+plt.show()
+
 

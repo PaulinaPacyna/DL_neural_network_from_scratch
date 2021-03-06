@@ -51,12 +51,10 @@ class Network:
         activation_type="sigmoid",
         init_sigma =1,
         alpha=0.1,
-        batch_size=10,
         n_epochs=10,
     ):
         self.alpha = alpha
         self.n_epochs = n_epochs
-        self.batch_size = batch_size
         layers_kwargs = {"activation_type": activation_type, 'init_sigma': init_sigma}
         try:
             if len(layers) < 2:

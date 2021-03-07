@@ -28,6 +28,10 @@ class Layer:
     def activation(self, x):
         if self.activation_type == "sigmoid":
             return 1 / (1 + np.exp(-x))
+        if self.activation_type == "tanh":
+            return np.tanh(x)
+        if self.activation_type == "relu":
+            return np.maximum(0.0, x)
 
     def fit(self, inputs: np.array):
         """Returns output (sigma(Wx+b))"""
@@ -85,11 +89,19 @@ class Network:
                 for n, layer in reversed(list(enumerate(self.layers))):
                     if n == len(self.layers) - 1:  # if this is output layer
                         # pairwise multiplication, not matrix multiplication
-                        delta = (pred * (1 - pred)).reshape((-1, 1)) * (
-                            self.fit(x) - y
-                        ).reshape((-1, 1))
-                        # TODO: I assume sigmoid activation function above (derivative = (pred * (1 - pred))
-                        # this needs to be generalized
+                        if layer.activation_type == "sigmoid":
+                            delta = (pred * (1 - pred)).reshape((-1, 1)) * (
+                                self.fit(x) - y
+                            ).reshape((-1, 1))
+                        elif layer.activation_type == "tanh":
+                            delta = (1-pred**2).reshape((-1, 1)) * (
+                                self.fit(x) - y
+                            ).reshape((-1, 1))
+                        elif layer.activation_type == "relu":
+                            delta = (pred > 0).reshape((-1, 1)) * (
+                                    self.fit(x) - y
+                            ).reshape((-1, 1))
+
                         layer.set_delta(delta)
 
                     else:  # if this is a hidden layer
@@ -107,7 +119,7 @@ class Network:
                     y = layer.fit(x)
                     layer.set_weights(
                         layer.weights
-                        - self.alpha * np.matmul((layer.delta), x.reshape((1, -1)))
+                        - self.alpha * np.matmul(layer.delta, x.reshape((1, -1)))
                     )  #
                     layer.set_bias(layer.bias - self.alpha * layer.delta)
                     x = y  # output becomes input for next layer

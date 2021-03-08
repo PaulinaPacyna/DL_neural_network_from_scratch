@@ -56,11 +56,7 @@ class Network:
         init_sigma=1,
         alpha=0.1,
         n_epochs=10,
-<<<<<<< HEAD
         cost_fun="quadratic",
-=======
-        cost_fun="quadratic"
->>>>>>> 6f3fa1c3d1a41e7173cdf0a1780ac0d5bdcacca7
     ):
         self.cost_fun = cost_fun
         self.alpha = alpha
@@ -98,15 +94,9 @@ class Network:
                         if layer.activation_type == "sigmoid":
                             deriv = pred * (1 - pred)
                         elif layer.activation_type == "tanh":
-<<<<<<< HEAD
                             deriv = 1 - pred ** 2
                         elif layer.activation_type == "relu":
                             deriv = pred > 0
-=======
-                            deriv = 1-pred**2
-                        elif layer.activation_type == "relu":
-                            deriv = (pred > 0)
->>>>>>> 6f3fa1c3d1a41e7173cdf0a1780ac0d5bdcacca7
                         else:
                             raise ValueError("No such activation function")
 
@@ -119,13 +109,9 @@ class Network:
                             deriv = np.array([1 for i in range(len(deriv))])
                         elif self.cost_fun == "hellinger":
                             # only with positive activation functions
-<<<<<<< HEAD
                             cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (
                                 np.sqrt(2) * np.sqrt(pred)
                             )
-=======
-                            cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (np.sqrt(2) * np.sqrt(pred))
->>>>>>> 6f3fa1c3d1a41e7173cdf0a1780ac0d5bdcacca7
                         else:
                             raise ValueError("No such cost function")
 

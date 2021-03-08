@@ -28,6 +28,10 @@ class Layer:
     def activation(self, x):
         if self.activation_type == "sigmoid":
             return 1 / (1 + np.exp(-x))
+        if self.activation_type == "tanh":
+            return np.tanh(x)
+        if self.activation_type == "relu":
+            return np.maximum(0.0, x)
 
     def fit(self, inputs: np.array):
         """Returns output (sigma(Wx+b))"""
@@ -52,7 +56,9 @@ class Network:
         init_sigma=1,
         alpha=0.1,
         n_epochs=10,
+        cost_fun="quadratic",
     ):
+        self.cost_fun = cost_fun
         self.alpha = alpha
         self.n_epochs = n_epochs
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
@@ -85,11 +91,32 @@ class Network:
                 for n, layer in reversed(list(enumerate(self.layers))):
                     if n == len(self.layers) - 1:  # if this is output layer
                         # pairwise multiplication, not matrix multiplication
-                        delta = (pred * (1 - pred)).reshape((-1, 1)) * (
-                            self.fit(x) - y
-                        ).reshape((-1, 1))
-                        # TODO: I assume sigmoid activation function above (derivative = (pred * (1 - pred))
-                        # this needs to be generalized
+                        if layer.activation_type == "sigmoid":
+                            deriv = pred * (1 - pred)
+                        elif layer.activation_type == "tanh":
+                            deriv = 1 - pred ** 2
+                        elif layer.activation_type == "relu":
+                            deriv = pred > 0
+                        else:
+                            raise ValueError("No such activation function")
+
+                        if self.cost_fun == "quadratic":
+                            cost_deriv = pred - y
+                        elif self.cost_fun == "cross-entropy":
+                            # only with sigmoid activation function
+                            # not sure if it's ok
+                            cost_deriv = pred - y
+                            deriv = np.array([1 for i in range(len(deriv))])
+                        elif self.cost_fun == "hellinger":
+                            # only with positive activation functions
+                            cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (
+                                np.sqrt(2) * np.sqrt(pred)
+                            )
+                        else:
+                            raise ValueError("No such cost function")
+
+                        delta = deriv.reshape((-1, 1)) * cost_deriv.reshape((-1, 1))
+
                         layer.set_delta(delta)
 
                     else:  # if this is a hidden layer
@@ -107,7 +134,7 @@ class Network:
                     y = layer.fit(x)
                     layer.set_weights(
                         layer.weights
-                        - self.alpha * np.matmul((layer.delta), x.reshape((1, -1)))
+                        - self.alpha * np.matmul(layer.delta, x.reshape((1, -1)))
                     )  #
                     layer.set_bias(layer.bias - self.alpha * layer.delta)
                     x = y  # output becomes input for next layer

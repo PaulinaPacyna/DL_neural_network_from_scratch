@@ -24,15 +24,3 @@ print(
         np.argmax(pred, axis=1).reshape((-1)) == np.argmax(y_test, axis=1).reshape((-1))
     )
 )
-print("----------------XOR--------------------")
-# sigmoid do xora to kiepski pomysl - w teorii jest zawsze zbiezne, a w praktyce to na 30 razy raz sie zbieglo
-# internet poleca inne activation function (tanh, relu)  - do zrobienia
-data = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 0], [0, 1, 1]])
-X = data[:, :2]
-y = data[:, 2]
-N = Network([2, 2, 1], alpha=0.9, n_epochs=10000, init_sigma=7)
-N.train(X, y)
-pred = N.fit(np.array([[1, 1], [1, 0], [0, 0], [0, 1]]))
-xy = np.mgrid[-1:3.1:0.05, -1:3.1:0.05].reshape(2, -1).T
-plt.scatter(xy[:, 0], xy[:, 1], c=np.round(N.fit(xy)), s=1)
-plt.show()

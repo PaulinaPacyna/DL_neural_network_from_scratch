@@ -56,7 +56,9 @@ class Network:
         init_sigma=1,
         alpha=0.1,
         n_epochs=10,
+        cost_fun="quadratic"
     ):
+        self.cost_fun = cost_fun
         self.alpha = alpha
         self.n_epochs = n_epochs
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
@@ -90,17 +92,28 @@ class Network:
                     if n == len(self.layers) - 1:  # if this is output layer
                         # pairwise multiplication, not matrix multiplication
                         if layer.activation_type == "sigmoid":
-                            delta = (pred * (1 - pred)).reshape((-1, 1)) * (
-                                self.fit(x) - y
-                            ).reshape((-1, 1))
+                            deriv = pred * (1 - pred)
                         elif layer.activation_type == "tanh":
-                            delta = (1-pred**2).reshape((-1, 1)) * (
-                                self.fit(x) - y
-                            ).reshape((-1, 1))
+                            deriv = 1-pred**2
                         elif layer.activation_type == "relu":
-                            delta = (pred > 0).reshape((-1, 1)) * (
-                                    self.fit(x) - y
-                            ).reshape((-1, 1))
+                            deriv = (pred > 0)
+                        else:
+                            raise ValueError("No such activation function")
+
+                        if self.cost_fun == "quadratic":
+                            cost_deriv = pred - y
+                        elif self.cost_fun == "cross-entropy":
+                            # only with sigmoid activation function
+                            # not sure if it's ok
+                            cost_deriv = pred - y
+                            deriv = np.array([1 for i in range(len(deriv))])
+                        elif self.cost_fun == "hellinger":
+                            # only with positive activation functions
+                            cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (np.sqrt(2) * np.sqrt(pred))
+                        else:
+                            raise ValueError("No such cost function")
+
+                        delta = deriv.reshape((-1, 1)) * cost_deriv.reshape((-1, 1))
 
                         layer.set_delta(delta)
 

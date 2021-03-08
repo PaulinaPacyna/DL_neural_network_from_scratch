@@ -8,6 +8,8 @@ from network import Network
 
 np.random.seed(10)
 
+np.random.seed(10)
+
 print("----------------IRIS--------------------")
 X, y = load_iris(return_X_y=True)
 encoder = preprocessing.OneHotEncoder()
@@ -26,12 +28,23 @@ print(
     )
 )
 
+
+np.random.seed(10)
+
 print("----------------XOR--------------------")
 # sigmoid do xora to kiepski pomysl - w teorii jest zawsze zbiezne, a w praktyce to na 30 razy raz sie zbieglo
 # internet poleca inne activation function (tanh, relu)  - do zrobienia
 data = np.array([[1, 1, 0], [1, 0, 1], [0, 0, 0], [0, 1, 1]])
 X = data[:, :2]
 y = data[:, 2]
+N = Network(
+    [2, 2, 1],
+    alpha=0.9,
+    activation_type="sigmoid",
+    n_epochs=1000,
+    init_sigma=7,
+    cost_fun="hellinger",
+)
 N = Network(
     [2, 2, 1],
     alpha=0.9,

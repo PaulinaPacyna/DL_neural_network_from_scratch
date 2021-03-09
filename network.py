@@ -91,14 +91,7 @@ class Network:
                 for n, layer in reversed(list(enumerate(self.layers))):
                     if n == len(self.layers) - 1:  # if this is output layer
                         # pairwise multiplication, not matrix multiplication
-                        if layer.activation_type == "sigmoid":
-                            deriv = pred * (1 - pred)
-                        elif layer.activation_type == "tanh":
-                            deriv = 1 - pred ** 2
-                        elif layer.activation_type == "relu":
-                            deriv = pred > 0
-                        else:
-                            raise ValueError("No such activation function")
+                        deriv = self.activation_derivative(layer, pred)
 
                         if self.cost_fun == "quadratic":
                             cost_deriv = pred - y
@@ -138,6 +131,17 @@ class Network:
                     )  #
                     layer.set_bias(layer.bias - self.alpha * layer.delta)
                     x = y  # output becomes input for next layer
+
+    def activation_derivative(self, layer, pred):
+        if layer.activation_type == "sigmoid":
+            deriv = pred * (1 - pred)
+        elif layer.activation_type == "tanh":
+            deriv = 1 - pred ** 2
+        elif layer.activation_type == "relu":
+            deriv = pred > 0
+        else:
+            raise ValueError("No such activation function")
+        return deriv
 
     def fit(self, X):
         def fit_one(x):

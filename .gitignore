@@ -1,2 +1,4 @@
 /dl1/
 /.idea/
+__pycache__/*
+

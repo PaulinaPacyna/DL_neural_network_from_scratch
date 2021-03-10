@@ -10,6 +10,7 @@ on:
 jobs:
   black:
     runs-on: ubuntu-latest
-      steps:
-      - name: black
-        uses: RojerGS/python-black-check@master
+
+    steps:
+    - name: black
+      uses: RojerGS/python-black-check@master

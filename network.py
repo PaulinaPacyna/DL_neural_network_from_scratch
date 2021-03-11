@@ -18,12 +18,24 @@ class Layer:
         self.activation_type = activation_type
         self.n_input = n_input
         self.n_output = n_output
+        self.momentum = np.zeros(self.weights.shape)
+        self.momentum_bias = np.zeros(self.bias.shape)
 
-    def set_weights(self, W):
-        self.weights = np.array(W).reshape(self.weights.shape)
+    def update_weights(self, W, learning_rate, momentum_rate):
+        change = (
+            learning_rate * np.array(W).reshape(self.weights.shape)
+            - momentum_rate * self.momentum
+        )
+        self.weights = self.weights - change
+        self.momentum = change
 
-    def set_bias(self, b):
-        self.bias = np.array(b).reshape(self.bias.shape)
+    def update_bias(self, b, learning_rate, momentum_rate):
+        change = (
+            learning_rate * np.array(b).reshape(self.bias.shape)
+            - momentum_rate * self.momentum_bias
+        )
+        self.bias = self.bias - change
+        self.momentum_bias = change
 
     def activation(self, x):
         if self.activation_type == "sigmoid":
@@ -54,12 +66,14 @@ class Network:
         layers: np.array,
         activation_type="sigmoid",
         init_sigma=1,
-        alpha=0.1,
+        learning_rate=0.1,
+        momentum_rate=0.1,
         n_epochs=10,
         cost_fun="quadratic",
     ):
         self.cost_fun = cost_fun
-        self.alpha = alpha
+        self.learing_rate = learning_rate
+        self.momentum_rate = momentum_rate
         self.n_epochs = n_epochs
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
@@ -99,7 +113,7 @@ class Network:
                             # only with sigmoid activation function
                             # not sure if it's ok
                             cost_deriv = pred - y
-                            deriv = np.array([1 for i in range(len(deriv))])
+                            deriv = np.array([1 for _ in range(len(deriv))])
                         elif self.cost_fun == "hellinger":
                             # only with positive activation functions
                             cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (
@@ -125,11 +139,14 @@ class Network:
                 # going front to back - updating weights using deltas
                 for layer in self.layers:
                     y = layer.fit(x)
-                    layer.set_weights(
-                        layer.weights
-                        - self.alpha * np.matmul(layer.delta, x.reshape((1, -1)))
-                    )  #
-                    layer.set_bias(layer.bias - self.alpha * layer.delta)
+                    layer.update_weights(
+                        np.matmul(layer.delta, x.reshape((1, -1))),
+                        self.learing_rate,
+                        self.momentum_rate,
+                    )
+                    layer.update_bias(
+                        layer.delta, self.learing_rate, self.momentum_rate
+                    )
                     x = y  # output becomes input for next layer
 
     def activation_derivative(self, layer, pred):

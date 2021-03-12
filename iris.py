@@ -16,9 +16,9 @@ encoder = preprocessing.OneHotEncoder()
 y = encoder.fit_transform(y.reshape((-1, 1))).todense()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.33)
 N = Network(
-    [4, 3], learning_rate=0.4, n_epochs=400, cost_fun="cross-entropy"
+    [4, 3], learning_rate=0.25, n_epochs=1000, cost_fun="cross-entropy", batch_size=10
 )  # best without hidden layers - iris dataset is too small
-N.train(X_train, y_train)
+N.train_batches(X_train, y_train)
 pred = N.fit(X_test)
 print(np.argmax(pred, axis=1).reshape((-1,)))
 print(np.argmax(np.array(y_test), axis=1).reshape((-1,)))

@@ -70,11 +70,13 @@ class Network:
         momentum_rate=0.1,
         n_epochs=10,
         cost_fun="quadratic",
+        batch_size=1,
     ):
         self.cost_fun = cost_fun
         self.learing_rate = learning_rate
         self.momentum_rate = momentum_rate
         self.n_epochs = n_epochs
+        self.batch_size = batch_size
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
             if len(layers) < 2:
@@ -85,6 +87,8 @@ class Network:
             Layer(layers[i], layers[i + 1], **layers_kwargs)
             for i in range(len(layers) - 1)
         ]
+        if (self.cost_fun in ["cross-entropy", "hellinger"]) and (activation_type != "sigmoid"):
+            raise ValueError("This activation does not support the desired cost function")
 
     def train(self, X, Y):
         for _ in range(self.n_epochs):  # repeat on whole dataset n_epochs times
@@ -137,6 +141,74 @@ class Network:
                     )  # we calculate delta in n layer using weights from n+1
 
                 # going front to back - updating weights using deltas
+                for layer in self.layers:
+                    y = layer.fit(x)
+                    layer.update_weights(
+                        np.matmul(layer.delta, x.reshape((1, -1))),
+                        self.learing_rate,
+                        self.momentum_rate,
+                    )
+                    layer.update_bias(
+                        layer.delta, self.learing_rate, self.momentum_rate
+                    )
+                    x = y  # output becomes input for next layer
+
+    def train_batches(self, X, Y):
+        X = np.array(X)
+        Y = np.array(Y)
+        if Y.ndim == 1:
+            Y = Y.reshape(
+                (-1, 1)
+            )  # if y is an one-dimensional vector - make it a column vector (matrix)
+        if X.shape[0] != Y.shape[0]:
+            raise ValueError("X and y have different row numbers")
+        n_rows = X.shape[0]
+        train_data = [(x, y) for (x, y) in zip(X, Y)]
+        for _ in range(self.n_epochs):
+            np.random.shuffle(train_data)
+            batches = [train_data[i:i + self.batch_size] for i in range(0, n_rows, self.batch_size)]
+            for batch in batches:
+                for n, layer in reversed(list(enumerate(self.layers))):
+                    if n == len(self.layers) - 1:  # if this is output layer
+                        deltas = np.zeros((layer.n_output, 1))
+                        for x, y in batch:
+                            x = x.reshape((1, -1))  # row vector
+                            y = y.reshape((1, -1))  # row vector
+                            pred = self.fit(x)
+                            deriv = self.activation_derivative(layer, pred)
+
+                            if self.cost_fun == "quadratic":
+                                cost_deriv = pred - y
+                            elif self.cost_fun == "cross-entropy":
+                                # only with sigmoid activation function
+                                # not sure if it's ok
+                                cost_deriv = pred - y
+                                deriv = np.array([1 for _ in range(len(deriv))])
+                            elif self.cost_fun == "hellinger":
+                                # only with positive activation functions
+                                cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (
+                                        np.sqrt(2) * np.sqrt(pred)
+                                )
+                            else:
+                                raise ValueError("No such cost function")
+
+                            delta = deriv.reshape((-1, 1)) * cost_deriv.reshape((-1, 1))
+                            deltas += delta
+
+                        deltas /= self.batch_size
+                        layer.set_delta(deltas)
+
+                    else:  # if this is a hidden layer
+                        # using delta and weights from n+1
+                        delta = np.matmul(prev_weights.transpose(), delta).reshape(
+                            -1, 1
+                        )
+                        layer.set_delta(delta)
+                    prev_weights = (
+                        layer.weights
+                    )  # we calculate delta in n layer using weights from n+1
+
+                    # going front to back - updating weights using deltas
                 for layer in self.layers:
                     y = layer.fit(x)
                     layer.update_weights(

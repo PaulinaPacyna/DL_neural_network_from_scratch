@@ -1,3 +1,5 @@
+from copy import copy
+
 import numpy as np
 
 
@@ -12,19 +14,20 @@ class Layer:
         init_sigma=1,
     ):
         self.weights = np.random.normal(0, init_sigma, n_output * n_input).reshape(
-            (n_output, n_input)
-        )  # matrix of weights. Rows corresponds to output neurons, columns to input neurons
-        self.bias = np.random.normal(0, init_sigma, n_output).reshape((-1, 1))
+            (n_input, n_output)
+        )
+        self.bias = np.random.normal(0, init_sigma, n_output).reshape((1, -1))
         self.activation_type = activation_type
         self.n_input = n_input
         self.n_output = n_output
         self.momentum = np.zeros(self.weights.shape)
         self.momentum_bias = np.zeros(self.bias.shape)
+        self.outputs = np.zeros(n_output)
 
     def update_weights(self, W, learning_rate, momentum_rate):
         change = (
             learning_rate * np.array(W).reshape(self.weights.shape)
-            - momentum_rate * self.momentum
+            + momentum_rate * self.momentum
         )
         self.weights = self.weights - change
         self.momentum = change
@@ -32,18 +35,19 @@ class Layer:
     def update_bias(self, b, learning_rate, momentum_rate):
         change = (
             learning_rate * np.array(b).reshape(self.bias.shape)
-            - momentum_rate * self.momentum_bias
+            + momentum_rate * self.momentum_bias
         )
         self.bias = self.bias - change
         self.momentum_bias = change
 
     def activation(self, x):
         if self.activation_type == "sigmoid":
-            return 1 / (1 + np.exp(-x))
+            self.outputs = 1 / (1 + np.exp(-x))
         if self.activation_type == "tanh":
-            return np.tanh(x)
+            self.outputs = np.tanh(x)
         if self.activation_type == "relu":
-            return np.maximum(0.0, x)
+            self.outputs = np.maximum(0.0, x)
+        return self.outputs
 
     def fit(self, inputs: np.array):
         """Returns output (sigma(Wx+b))"""
@@ -51,16 +55,14 @@ class Layer:
 
     def lin_comb(self, inputs):
         """Returns weights(matrix) * inputs (column) + bias (column)"""
-        inputs = inputs.reshape((-1, 1))  # column vector
-        W = self.weights
-        Wx = np.matmul(W, inputs).reshape((-1, 1))  # column vector
-        return (Wx + self.bias).reshape((-1, 1))  # column vector
+        Wx = np.matmul(inputs, self.weights)
+        return Wx + self.bias
 
     def set_delta(self, delta):
-        self.delta = np.array(delta).reshape((-1, 1))
+        self.delta = np.array(delta)
 
 
-class Network:
+class Network(object):
     def __init__(
         self,
         layers: np.array,
@@ -68,18 +70,24 @@ class Network:
         init_sigma=1,
         learning_rate=0.1,
         momentum_rate=0.1,
-        n_epochs=10,
+        n_epochs=100,
         cost_fun="quadratic",
+        batch_size=10,
+        print_progress=False,
     ):
         self.cost_fun = cost_fun
-        self.learing_rate = learning_rate
+        self.learning_rate = learning_rate
         self.momentum_rate = momentum_rate
         self.n_epochs = n_epochs
+        self.batch_size = batch_size
+        self.print_progress = print_progress
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
-            if len(layers) < 2:
+            if (
+                len(layers) < 2
+            ):  # if len(layers) throws error (for example user specified an integer)
                 raise ValueError("Network must have at least 2 layers")
-        except TypeError:  # if len(layers) throws error (for example user specified an integer)
+        except TypeError:
             raise TypeError("Layers must be a list of number of neurons in each layer")
         self.layers = [
             Layer(layers[i], layers[i + 1], **layers_kwargs)
@@ -87,69 +95,81 @@ class Network:
         ]
 
     def train(self, X, Y):
-        for _ in range(self.n_epochs):  # repeat on whole dataset n_epochs times
-            X = np.array(X)
-            Y = np.array(Y)
-            if Y.ndim == 1:
-                Y = Y.reshape(
-                    (-1, 1)
-                )  # if y is an one-dimensional vector - make it a column vector (matrix)
-            if X.shape[0] != Y.shape[0]:
-                raise ValueError("X and y have different row numbers")
-            n_rows = X.shape[0]
-            for i in range(n_rows):
-                x = X[i, :].reshape((1, -1))  # row vector
-                y = Y[i, :].reshape((1, -1))  # row vector
-                pred = self.fit(x)
-                # going from the back to the front - setting delta
-                for n, layer in reversed(list(enumerate(self.layers))):
-                    if n == len(self.layers) - 1:  # if this is output layer
-                        # pairwise multiplication, not matrix multiplication
-                        deriv = self.activation_derivative(layer, pred)
-
-                        if self.cost_fun == "quadratic":
-                            cost_deriv = pred - y
-                        elif self.cost_fun == "cross-entropy":
-                            # only with sigmoid activation function
-                            # not sure if it's ok
-                            cost_deriv = pred - y
-                            deriv = np.array([1 for _ in range(len(deriv))])
-                        elif self.cost_fun == "hellinger":
-                            # only with positive activation functions
-                            cost_deriv = (np.sqrt(pred) - np.sqrt(y)) / (
-                                np.sqrt(2) * np.sqrt(pred)
-                            )
-                        else:
-                            raise ValueError("No such cost function")
-
-                        delta = deriv.reshape((-1, 1)) * cost_deriv.reshape((-1, 1))
-
-                        layer.set_delta(delta)
-
-                    else:  # if this is a hidden layer
-                        # using delta and weights from n+1
-                        delta = np.matmul(prev_weights.transpose(), delta).reshape(
-                            -1, 1
+        X = np.array(X)
+        Y = np.array(Y)
+        if Y.ndim == 1:
+            Y = Y.reshape(
+                (-1, 1)
+            )  # if y is an one-dimensional vector - make it a column vector (matrix)
+        if X.shape[0] != Y.shape[0]:
+            raise ValueError("X and y have different row numbers")
+        n_row = X.shape[0]
+        shuffle = np.arange(Y.shape[0])
+        np.random.shuffle(shuffle)
+        X = X[shuffle, :]
+        Y = Y[shuffle, :]
+        for e in range(self.n_epochs):
+            batch_division = np.arange(self.batch_size, n_row, self.batch_size)
+            x_batches = np.split(X, batch_division)
+            y_batches = np.split(Y, batch_division)
+            for n_batch in range(len(batch_division)):
+                x = x_batches[n_batch]
+                y = y_batches[n_batch]
+                prediction = self.fit(x)
+                error = np.array(prediction - y)
+                # computing delta in last layer using standard chain rule
+                self.layers[-1].set_delta(
+                    error * self.activation_derivative(self.layers[-1], prediction)
+                )
+                # going back to front starting from last hidden layer
+                for n_layer in range(len(self.layers) - 2, -1, -1):
+                    error = np.matmul(
+                        self.layers[n_layer + 1].delta,
+                        self.layers[n_layer + 1].weights.T,
+                    )
+                    self.layers[n_layer].set_delta(
+                        error
+                        * self.activation_derivative(
+                            self.layers[n_layer], self.layers[n_layer].outputs
                         )
-                        layer.set_delta(delta)
-                    prev_weights = (
-                        layer.weights
-                    )  # we calculate delta in n layer using weights from n+1
-
-                # going front to back - updating weights using deltas
-                for layer in self.layers:
-                    y = layer.fit(x)
-                    layer.update_weights(
-                        np.matmul(layer.delta, x.reshape((1, -1))),
-                        self.learing_rate,
+                    )
+                # going front to back - updating weights using deltas that we just computed
+                self.layers[0].update_weights(
+                    np.matmul(x.T, self.layers[0].delta),
+                    self.learning_rate,
+                    self.momentum_rate,
+                )
+                self.layers[0].update_bias(
+                    self.layers[0].delta.sum(axis=0)[None, :],
+                    self.learning_rate,
+                    self.momentum_rate,
+                )
+                for n_layer in range(1, len(self.layers)):
+                    self.layers[n_layer].update_weights(
+                        np.matmul(
+                            self.layers[n_layer - 1].outputs.T,
+                            self.layers[n_layer].delta,
+                        ),
+                        self.learning_rate,
                         self.momentum_rate,
                     )
-                    layer.update_bias(
-                        layer.delta, self.learing_rate, self.momentum_rate
+                    self.layers[n_layer].update_bias(
+                        self.layers[n_layer].delta.sum(axis=0)[None, :],
+                        self.learning_rate,
+                        self.momentum_rate,
                     )
-                    x = y  # output becomes input for next layer
+            if self.print_progress:
+                if e % 1000 == 0:
+                    print(f"Epoch: {e}/{self.n_epochs}")
 
-    def activation_derivative(self, layer, pred):
+    def fit(self, X):
+        y = copy(X)
+        for layer in self.layers:
+            y = layer.fit(y)
+        return y
+
+    @staticmethod
+    def activation_derivative(layer, pred):
         if layer.activation_type == "sigmoid":
             deriv = pred * (1 - pred)
         elif layer.activation_type == "tanh":
@@ -159,14 +179,3 @@ class Network:
         else:
             raise ValueError("No such activation function")
         return deriv
-
-    def fit(self, X):
-        def fit_one(x):
-            y = x
-            for layer in self.layers:
-                y = layer.fit(
-                    y
-                )  # output from previous layer becomes input for next layer
-            return y.reshape((-1,))
-
-        return np.apply_along_axis(fit_one, axis=1, arr=X)

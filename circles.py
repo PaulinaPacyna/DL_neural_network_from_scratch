@@ -35,4 +35,3 @@ NN.train(X, y)
 mesh = np.mgrid[-6:6:0.1, -6:6:0.1].reshape(2, -1).T
 plt.scatter(mesh[:, 0], mesh[:, 1], c=NN.fit(mesh), alpha=0.3, cmap="coolwarm")
 plt.scatter(X[:, 0], X[:, 1], c=y)
-plt.show()

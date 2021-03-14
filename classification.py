@@ -10,8 +10,8 @@ from network import Network
 PATH = os.path.join("data", "classification")
 datasets = ["data.simple", "data.three_gauss"]
 sizes = [100, 500, 1000, 10000]
-N = 500
-fig, axs = plt.subplots(3, 4, figsize=(16, 10))
+N = 100
+fig, axs = plt.subplots(3, 4, figsize=(12, 8))
 for j, size in enumerate(sizes):
     data = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.train.{size}.csv"))
     mesh = (

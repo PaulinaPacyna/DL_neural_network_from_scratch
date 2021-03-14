@@ -43,7 +43,14 @@ class Layer:
         if self.activation_type == "tanh":
             return np.tanh(x)
         if self.activation_type == "relu":
+<<<<<<< Updated upstream
             return np.maximum(0.0, x)
+=======
+            self.outputs = np.maximum(0.0, x)
+        if self.activation_type == "linear":
+            self.outputs = x
+        return self.outputs
+>>>>>>> Stashed changes
 
     def fit(self, inputs: np.array):
         """Returns output (sigma(Wx+b))"""
@@ -70,25 +77,52 @@ class Network:
         momentum_rate=0.1,
         n_epochs=10,
         cost_fun="quadratic",
+<<<<<<< Updated upstream
         batch_size=1,
+=======
+        batch_size=10,
+        print_progress=False,
+        regression=False,
+>>>>>>> Stashed changes
     ):
         self.cost_fun = cost_fun
         self.learing_rate = learning_rate
         self.momentum_rate = momentum_rate
         self.n_epochs = n_epochs
         self.batch_size = batch_size
+<<<<<<< Updated upstream
+=======
+        self.print_progress = print_progress
+        self.regression = regression
+>>>>>>> Stashed changes
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
             if len(layers) < 2:
                 raise ValueError("Network must have at least 2 layers")
         except TypeError:  # if len(layers) throws error (for example user specified an integer)
             raise TypeError("Layers must be a list of number of neurons in each layer")
+<<<<<<< Updated upstream
         self.layers = [
             Layer(layers[i], layers[i + 1], **layers_kwargs)
             for i in range(len(layers) - 1)
         ]
         if (self.cost_fun in ["cross-entropy", "hellinger"]) and (activation_type != "sigmoid"):
             raise ValueError("This activation does not support the desired cost function")
+=======
+        if self.regression:
+            if layers[-1] != 1:
+                raise ValueError("In regression problem, the last layer consists of only 1 output!")
+            self.layers = [
+                Layer(layers[i], layers[i + 1], **layers_kwargs)
+                for i in range(len(layers) - 2)
+            ]
+            self.layers.append(Layer(layers[-2], layers[-1], "linear", init_sigma))
+        else:
+            self.layers = [
+                Layer(layers[i], layers[i + 1], **layers_kwargs)
+                for i in range(len(layers) - 1)
+            ]
+>>>>>>> Stashed changes
 
     def train(self, X, Y):
         for _ in range(self.n_epochs):  # repeat on whole dataset n_epochs times
@@ -162,6 +196,7 @@ class Network:
             )  # if y is an one-dimensional vector - make it a column vector (matrix)
         if X.shape[0] != Y.shape[0]:
             raise ValueError("X and y have different row numbers")
+<<<<<<< Updated upstream
         n_rows = X.shape[0]
         train_data = [(x, y) for (x, y) in zip(X, Y)]
         for _ in range(self.n_epochs):
@@ -202,6 +237,41 @@ class Network:
                         # using delta and weights from n+1
                         delta = np.matmul(prev_weights.transpose(), delta).reshape(
                             -1, 1
+=======
+        n_row = X.shape[0]
+        shuffle = np.arange(Y.shape[0])
+        np.random.shuffle(shuffle)
+        X = X[shuffle, :]
+        Y = Y[shuffle, :]
+        for e in range(self.n_epochs):
+            batch_division = np.arange(self.batch_size, n_row, self.batch_size)
+            x_batches = np.split(X, batch_division)
+            y_batches = np.split(Y, batch_division)
+            for n_batch in range(len(batch_division)):
+                x = x_batches[n_batch]
+                y = y_batches[n_batch]
+                prediction = self.fit(x)
+                print("Pred: ", prediction)
+                error = np.array(prediction - y)
+                # computing delta in last layer using standard chain rule
+                self.layers[-1].set_delta(
+                    error
+                    if self.regression
+                    else error * self.activation_derivative(self.layers[-1], prediction)
+                )
+                # going back to front starting from last hidden layer
+                for n_layer in range(len(self.layers) - 2, -1, -1):
+                    error = np.matmul(
+                        self.layers[n_layer + 1].delta,
+                        self.layers[n_layer + 1].weights.T,
+                    )
+
+                    self.layers[n_layer].set_delta(
+                        error
+                        if self.regression
+                        else error * self.activation_derivative(
+                             self.layers[n_layer], self.layers[n_layer].outputs
+>>>>>>> Stashed changes
                         )
                         layer.set_delta(delta)
                     prev_weights = (
@@ -228,6 +298,8 @@ class Network:
             deriv = 1 - pred ** 2
         elif layer.activation_type == "relu":
             deriv = pred > 0
+        elif layer.activation_type == "linear":
+            deriv = np.ones(pred.shape)
         else:
             raise ValueError("No such activation function")
         return deriv

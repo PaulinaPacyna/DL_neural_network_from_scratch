@@ -47,6 +47,8 @@ class Layer:
             self.outputs = np.tanh(x)
         if self.activation_type == "relu":
             self.outputs = np.maximum(0.0, x)
+        if self.activation_type == "linear":
+            self.outputs = np.array(x)
         return self.outputs
 
     def fit(self, inputs: np.array):
@@ -74,6 +76,7 @@ class Network:
         cost_fun="quadratic",
         batch_size=10,
         print_progress=False,
+        regression=False,
     ):
         self.cost_fun = cost_fun
         self.learning_rate = learning_rate
@@ -81,6 +84,7 @@ class Network:
         self.n_epochs = n_epochs
         self.batch_size = batch_size
         self.print_progress = print_progress
+        self.regression = regression
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
             if (
@@ -89,10 +93,19 @@ class Network:
                 raise ValueError("Network must have at least 2 layers")
         except TypeError:
             raise TypeError("Layers must be a list of number of neurons in each layer")
-        self.layers = [
-            Layer(layers[i], layers[i + 1], **layers_kwargs)
-            for i in range(len(layers) - 1)
-        ]
+        if regression:
+            if layers[-1] != 1:
+                raise ValueError("In regression problem, output layer consists of 1 neuron")
+            self.layers = [
+                Layer(layers[i], layers[i + 1], **layers_kwargs)
+                for i in range(len(layers) - 2)
+            ]
+            self.layers.append(Layer(layers[-2], layers[-1], "linear", init_sigma))
+        else:
+            self.layers = [
+                Layer(layers[i], layers[i + 1], **layers_kwargs)
+                for i in range(len(layers) - 2)
+            ]
 
     def train(self, X, Y):
         X = np.array(X)
@@ -129,9 +142,10 @@ class Network:
                     )
                     self.layers[n_layer].set_delta(
                         error
-                        * self.activation_derivative(
-                            self.layers[n_layer], self.layers[n_layer].outputs
-                        )
+                        if self.regression
+                        else
+                        error * self.activation_derivative(
+                             self.layers[n_layer], self.layers[n_layer].outputs)
                     )
                 # going front to back - updating weights using deltas that we just computed
                 self.layers[0].update_weights(
@@ -176,6 +190,8 @@ class Network:
             deriv = 1 - pred ** 2
         elif layer.activation_type == "relu":
             deriv = pred > 0
+        elif layer.activation_type == "linear":
+            deriv = np.ones(pred.shape)
         else:
             raise ValueError("No such activation function")
         return deriv

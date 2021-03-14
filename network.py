@@ -62,7 +62,7 @@ class Layer:
         self.delta = np.array(delta)
 
 
-class Network(object):
+class Network:
     def __init__(
         self,
         layers: np.array,

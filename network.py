@@ -95,7 +95,9 @@ class Network:
             raise TypeError("Layers must be a list of number of neurons in each layer")
         if regression:
             if layers[-1] != 1:
-                raise ValueError("In regression problem, output layer consists of 1 neuron")
+                raise ValueError(
+                    "In regression problem, output layer consists of 1 neuron"
+                )
             self.layers = [
                 Layer(layers[i], layers[i + 1], **layers_kwargs)
                 for i in range(len(layers) - 2)
@@ -104,7 +106,7 @@ class Network:
         else:
             self.layers = [
                 Layer(layers[i], layers[i + 1], **layers_kwargs)
-                for i in range(len(layers) - 2)
+                for i in range(len(layers) - 1)
             ]
 
     def train(self, X, Y):
@@ -142,10 +144,9 @@ class Network:
                     )
                     self.layers[n_layer].set_delta(
                         error
-                        if self.regression
-                        else
-                        error * self.activation_derivative(
-                             self.layers[n_layer], self.layers[n_layer].outputs)
+                        * self.activation_derivative(
+                            self.layers[n_layer], self.layers[n_layer].outputs
+                        )
                     )
                 # going front to back - updating weights using deltas that we just computed
                 self.layers[0].update_weights(
@@ -189,7 +190,7 @@ class Network:
         elif layer.activation_type == "tanh":
             deriv = 1 - pred ** 2
         elif layer.activation_type == "relu":
-            deriv = pred > 0
+            deriv = (pred > 0) + 0  # this changes to int
         elif layer.activation_type == "linear":
             deriv = np.ones(pred.shape)
         else:

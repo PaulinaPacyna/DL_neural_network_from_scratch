@@ -1,17 +1,14 @@
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 
 from network import Network
 
-
-def rescale_df(df: pd.DataFrame):
-    return df.apply(lambda col: (col - min(col)) / (max(col) - min(col)), axis=0)
-
-
 PATH = os.path.join("data", "regression")
 datasets = ["data.activation", "data.cube"]
+
 sizes = [100, 500, 1000, 10000]
 N = 100
 fig, axs = plt.subplots(2, len(sizes), figsize=(12, 8))

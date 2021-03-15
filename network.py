@@ -85,6 +85,8 @@ class Network:
         self.batch_size = batch_size
         self.print_progress = print_progress
         self.regression = regression
+        self.x_min, self.x_maxmin = np.zeros(layers[0]), np.ones(layers[0])
+        self.y_min, self.y_maxmin = 0, 1
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
             if (
@@ -112,6 +114,9 @@ class Network:
     def train(self, X, Y):
         X = np.array(X)
         Y = np.array(Y)
+        if self.regression:
+            X = self.scale_x(X)
+            Y = self.scale_y(Y)
         if Y.ndim == 1:
             Y = Y.reshape(
                 (-1, 1)
@@ -131,10 +136,9 @@ class Network:
                 x = x_batches[n_batch]
                 y = y_batches[n_batch]
                 prediction = self.fit(x)
-                error = np.array(prediction - y)
                 # computing delta in last layer using standard chain rule
                 self.layers[-1].set_delta(
-                    error * self.activation_derivative(self.layers[-1], prediction)
+                    self.delta(prediction, y)
                 )
                 # going back to front starting from last hidden layer
                 for n_layer in range(len(self.layers) - 2, -1, -1):
@@ -177,11 +181,41 @@ class Network:
                 if e % 1000 == 0:
                     print(f"Epoch: {e}/{self.n_epochs}")
 
-    def fit(self, X):
-        y = copy(X)
+    def fit(self, X, predict=False):
+        y = (X-self.x_min)/self.x_maxmin if predict else copy(X)
         for layer in self.layers:
             y = layer.fit(y)
+        if predict:
+            return self.rescale_y(y)
         return y
+
+    def scale_x(self, X):
+        self.x_min = X.min(axis=0)
+        self.x_maxmin = X.ptp(axis=0)  # max-min
+        return np.apply_along_axis(lambda x: (x-self.x_min) / self.x_maxmin, axis=1, arr=X)
+
+    def scale_y(self, Y):
+        self.y_min = min(Y)
+        self.y_maxmin = max(Y) - min(Y)
+        return (Y - self.y_min) / self.y_maxmin
+
+    def rescale_x(self, X):
+        return np.apply_along_axis(lambda x: x * self.x_maxmin + self.x_min, axis=1, arr=X)
+
+    def rescale_y(self, Y):
+        return Y * self.y_maxmin + self.y_min
+
+    def delta(self, a, y):
+        if self.cost_fun == "quadratic":
+            return np.array(a-y) * self.activation_derivative(self.layers[-1], a)
+        elif self.cost_fun == "cross-entropy":
+            return np.array(a-y)
+        elif self.cost_fun == "hellinger":
+            if self.layers[-1].activation_type != "sigmoid":
+                raise ValueError("Hellinger cost function works only with (0,1) values of activation!")
+            return ((np.sqrt(a) - np.sqrt(y))/(np.sqrt(2)*np.sqrt(a))) * self.activation_derivative(self.layers[-1], a)
+        else:
+            raise ValueError("No such cost function!")
 
     @staticmethod
     def activation_derivative(layer, pred):

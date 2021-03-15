@@ -3,8 +3,6 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from sklearn import preprocessing
-from sklearn.metrics import r2_score
 
 from network import Network
 
@@ -12,40 +10,52 @@ PATH = os.path.join("data", "regression")
 datasets = ["data.activation", "data.cube"]
 
 sizes = [100, 500, 1000, 10000]
-N = 500
+N = 100
+fig, axs = plt.subplots(2, len(sizes), figsize=(12, 8))
+for j, size in enumerate(sizes):
+    train = (pd.read_csv(os.path.join(PATH, f"{datasets[0]}.train.{size}.csv")))
+    test = (pd.read_csv(os.path.join(PATH, f"{datasets[0]}.test.{size}.csv")))
+    MLP = Network(
+        [1, 2, 2, 1],
+        regression=True,
+        n_epochs=10000,
+        batch_size=size//100,
+        activation_type="sigmoid",
+        learning_rate=0.01,
+        momentum_rate=0.01,
+        print_progress=True,
+    )
+    MLP.train(train[["x"]].to_numpy(), train[["y"]].to_numpy())
+    prediction = MLP.fit(test[['x']].to_numpy(), predict=True)
 
-np.random.seed(15)
-size = sizes[2]
-training_data = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.train.{size}.csv"))
-# training_data["x"] = (training_data["x"] - min(training_data["x"])) / (
-#     max(training_data["x"]) - min(training_data["x"])
-# )
-# training_data["y"] = (training_data["y"] - min(training_data["y"])) / (
-#     max(training_data["y"]) - min(training_data["y"])
-# )
-test_data = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.test.{size}.csv"))
-# test_data["x"] = (test_data["x"] - min(test_data["x"])) / (
-#     max(test_data["x"]) - min(test_data["x"])
-# )
-# test_data["y"] = (test_data["y"] - min(test_data["y"])) / (
-#     max(test_data["y"]) - min(test_data["y"])
-# )
-MLP = Network(
-    [1, 2, 2, 1],
-    regression=True,
-    n_epochs=10000,
-    batch_size=100,
-    activation_type="sigmoid",
-    learning_rate=0.01,
-    momentum_rate=0.01,
-    print_progress=True,
-)
-MLP.train(training_data[["x"]].to_numpy(), training_data[["y"]].to_numpy())
-y_pred = MLP.fit(test_data[["x"]].to_numpy(), predict=True)
-print(r2_score(test_data[["y"]], y_pred))
-plt.scatter(test_data[["x"]], test_data[["y"]], c="red")
-plt.scatter(
-    training_data[["x"]], training_data[["y"]], c="green"
-)  # jak przyblizysz to widać
-plt.scatter(test_data[["x"]], y_pred, c="blue")
+    p= axs[0][j].scatter(test[["x"]], test[["y"]], c="red", )
+    r=axs[0][j].scatter(
+        train[["x"]], train[["y"]], c="green"
+    )
+    q=axs[0][j].scatter(test[["x"]], prediction, c="blue")
+    axs[0][j].legend([p,r,q], ['Test data', 'Training data', 'Prediction data'])
+
+for j, size in enumerate(sizes):
+    train = (pd.read_csv(os.path.join(PATH, f"{datasets[1]}.train.{size}.csv")))
+    test = (pd.read_csv(os.path.join(PATH, f"{datasets[1]}.test.{size}.csv")))
+    MLP = Network(
+        [1, 3, 3, 1],
+        regression=True,
+        n_epochs=10000,
+        batch_size=size//100,
+        activation_type="sigmoid",
+        learning_rate=0.01,
+        momentum_rate=0.01,
+        print_progress=True,
+    )
+    MLP.train(train[["x"]].to_numpy(), train[["y"]].to_numpy())
+    prediction = MLP.fit(test[['x']].to_numpy(), predict=True)
+
+    p=axs[1][j].scatter(test[["x"]], test[["y"]], c="red")
+    r=axs[1][j].scatter(
+        train[["x"]], train[["y"]], c="green"
+    )
+    q=axs[1][j].scatter(test[["x"]], prediction, c="blue")
+    axs[1][j].legend([p,r,q], ['Test data', 'Training data', 'Prediction data'])
+
 plt.show()

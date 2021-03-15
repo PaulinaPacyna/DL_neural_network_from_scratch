@@ -85,8 +85,6 @@ class Network:
         self.batch_size = batch_size
         self.print_progress = print_progress
         self.regression = regression
-        self.x_min, self.x_maxmin = 0, 1
-        self.y_min, self.y_maxmin = 0, 1
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
             if (
@@ -114,9 +112,6 @@ class Network:
     def train(self, X, Y):
         X = np.array(X)
         Y = np.array(Y)
-        if self.regression:
-            X = self.scale_x(X)
-            Y = self.scale_y(Y)
         if Y.ndim == 1:
             Y = Y.reshape(
                 (-1, 1)
@@ -181,12 +176,10 @@ class Network:
                 if e % 1000 == 0:
                     print(f"Epoch: {e}/{self.n_epochs}")
 
-    def fit(self, X, predict=False):
-        y = (X-self.x_min)/self.x_maxmin if predict else copy(X)
+    def fit(self, X):
+        y = copy(X)
         for layer in self.layers:
             y = layer.fit(y)
-        if predict:
-            return self.rescale_y(y)
         return y
 
     def scale_x(self, X):

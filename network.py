@@ -85,7 +85,7 @@ class Network:
         self.batch_size = batch_size
         self.print_progress = print_progress
         self.regression = regression
-        self.x_min, self.x_maxmin = 0, 1
+        self.x_min, self.x_maxmin = np.ones(layers[0]), np.zeros(layers[0])
         self.y_min, self.y_maxmin = 0, 1
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
@@ -191,9 +191,9 @@ class Network:
         return y
 
     def scale_x(self, X):
-        self.x_min = min(X)
-        self.x_maxmin = max(X) - min(X)
-        return (X - self.x_min) / self.x_maxmin
+        self.x_min = X.min(axis=0)
+        self.x_maxmin = X.ptp(axis=0)  # max-min
+        return np.apply_along_axis(lambda x: (x-self.x_min) / self.x_maxmin, axis=1, arr=X)
 
     def scale_y(self, Y):
         self.y_min = min(Y)

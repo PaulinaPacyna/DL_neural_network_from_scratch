@@ -12,6 +12,7 @@ class Layer:
         n_output: int,
         activation_type: str = "sigmoid",
         init_sigma=1,
+            bias_present=True
     ):
         self.weights = np.random.normal(0, init_sigma, n_output * n_input).reshape(
             (n_input, n_output)
@@ -23,6 +24,7 @@ class Layer:
         self.momentum = np.zeros(self.weights.shape)
         self.momentum_bias = np.zeros(self.bias.shape)
         self.outputs = np.zeros(n_output)
+        self.bias_present = bias_present
 
     def update_weights(self, W, learning_rate, momentum_rate):
         change = (
@@ -58,7 +60,7 @@ class Layer:
     def lin_comb(self, inputs):
         """Returns weights(matrix) * inputs (column) + bias (column)"""
         Wx = np.matmul(inputs, self.weights)
-        return Wx + self.bias
+        return Wx + self.bias * float(self.bias_present)
 
     def set_delta(self, delta):
         self.delta = np.array(delta)
@@ -77,6 +79,7 @@ class Network:
         batch_size=10,
         print_progress=False,
         regression=False,
+            bias_present=True
     ):
         self.cost_fun = cost_fun
         self.learning_rate = learning_rate
@@ -87,7 +90,7 @@ class Network:
         self.regression = regression
         self.x_min, self.x_maxmin = np.zeros(layers[0]), np.ones(layers[0])
         self.y_min, self.y_maxmin = 0, 1
-        layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
+        layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma, 'bias_present': bias_present}
         try:
             if (
                 len(layers) < 2

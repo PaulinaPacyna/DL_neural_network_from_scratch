@@ -182,21 +182,6 @@ class Network:
             y = layer.fit(y)
         return y
 
-    def scale_x(self, X):
-        self.x_min = min(X)
-        self.x_maxmin = max(X) - min(X)
-        return (X - self.x_min) / self.x_maxmin
-
-    def scale_y(self, Y):
-        self.y_min = min(Y)
-        self.y_maxmin = max(Y) - min(Y)
-        return (Y - self.y_min) / self.y_maxmin
-
-    def rescale_x(self, X):
-        return X * self.x_maxmin + self.x_min
-
-    def rescale_y(self, Y):
-        return Y * self.y_maxmin + self.y_min
 
     def delta(self, a, y):
         if self.cost_fun == "quadratic":

@@ -85,7 +85,7 @@ class Network:
         self.batch_size = batch_size
         self.print_progress = print_progress
         self.regression = regression
-        self.x_min, self.x_maxmin = np.ones(layers[0]), np.zeros(layers[0])
+        self.x_min, self.x_maxmin = np.zeros(layers[0]), np.ones(layers[0])
         self.y_min, self.y_maxmin = 0, 1
         layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma}
         try:
@@ -200,11 +200,10 @@ class Network:
         return (Y - self.y_min) / self.y_maxmin
 
     def rescale_x(self, X):
-        return X * self.x_maxmin + self.x_min
+        return np.apply_along_axis(lambda x: x * self.x_maxmin + self.x_min, axis=1, arr=X)
 
     def rescale_y(self, Y):
         return Y * self.y_maxmin + self.y_min
-
 
     def delta(self, a, y):
         if self.cost_fun == "quadratic":
@@ -217,6 +216,7 @@ class Network:
             return ((np.sqrt(a) - np.sqrt(y))/(np.sqrt(2)*np.sqrt(a))) * self.activation_derivative(self.layers[-1], a)
         else:
             raise ValueError("No such cost function!")
+
     @staticmethod
     def activation_derivative(layer, pred):
         if layer.activation_type == "sigmoid":

@@ -48,3 +48,4 @@ plt.scatter(
     training_data[["x"]], training_data[["y"]], c="green"
 )  # jak przyblizysz to widać
 plt.scatter(test_data[["x"]], y_pred, c="blue")
+plt.show()

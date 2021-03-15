@@ -136,10 +136,9 @@ class Network:
                 x = x_batches[n_batch]
                 y = y_batches[n_batch]
                 prediction = self.fit(x)
-                error = np.array(prediction - y)
                 # computing delta in last layer using standard chain rule
                 self.layers[-1].set_delta(
-                    error * self.activation_derivative(self.layers[-1], prediction)
+                    self.delta(prediction, y)
                 )
                 # going back to front starting from last hidden layer
                 for n_layer in range(len(self.layers) - 2, -1, -1):
@@ -206,6 +205,18 @@ class Network:
     def rescale_y(self, Y):
         return Y * self.y_maxmin + self.y_min
 
+
+    def delta(self, a, y):
+        if self.cost_fun == "quadratic":
+            return np.array(a-y) * self.activation_derivative(self.layers[-1], a)
+        elif self.cost_fun == "cross-entropy":
+            return np.array(a-y)
+        elif self.cost_fun == "hellinger":
+            if self.layers[-1].activation_type != "sigmoid":
+                raise ValueError("Hellinger cost function works only with (0,1) values of activation!")
+            return ((np.sqrt(a) - np.sqrt(y))/(np.sqrt(2)*np.sqrt(a))) * self.activation_derivative(self.layers[-1], a)
+        else:
+            raise ValueError("No such cost function!")
     @staticmethod
     def activation_derivative(layer, pred):
         if layer.activation_type == "sigmoid":

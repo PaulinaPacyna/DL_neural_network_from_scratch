@@ -39,6 +39,7 @@ MLP = Network(
     learning_rate=0.01,
     momentum_rate=0.01,
     print_progress=True,
+    cost_fun="cross-entropy",
 )
 MLP.train(training_data[["x"]].to_numpy(), training_data[["y"]].to_numpy())
 y_pred = MLP.fit(test_data[["x"]].to_numpy(), predict=True)

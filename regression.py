@@ -61,9 +61,7 @@ for j, size in enumerate(sizes):
     q = axs[1][j].scatter(test[["x"]], prediction, c="blue")
     axs[1][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     score = r2_score(test[["y"]], prediction)
-    axs[1][j].set_title(
-        f"Network: {[1, 3, 3, 1]}, \nsize: { size} \nr2 score:{score}"
-    )
+    axs[1][j].set_title(f"Network: {[1, 3, 3, 1]}, \nsize: { size} \nr2 score:{score}")
 
 
 plt.show()

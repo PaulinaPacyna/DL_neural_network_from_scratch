@@ -34,7 +34,9 @@ for j, size in enumerate(sizes):
     q = axs[0][j].scatter(test[["x"]], prediction, c="blue")
     axs[0][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     r2 = round(r2_score(test[["y"]], prediction), 4)
-    axs[0][j].set_title(f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,2,2,1]}")
+    axs[0][j].set_title(
+        f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,2,2,1]}"
+    )
 
 for j, size in enumerate(sizes):
     train = pd.read_csv(os.path.join(PATH, f"{datasets[1]}.train.{size}.csv"))
@@ -57,7 +59,9 @@ for j, size in enumerate(sizes):
     q = axs[1][j].scatter(test[["x"]], prediction, c="blue")
     axs[1][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     r2 = round(r2_score(test[["y"]], prediction), 4)
-    axs[1][j].set_title(f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,4,8,4,1]}")
+    axs[1][j].set_title(
+        f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,4,8,4,1]}"
+    )
 
 for j, size in enumerate(sizes):
     train = pd.read_csv(os.path.join(PATH, f"{datasets[2]}.train.{size}.csv"))
@@ -80,5 +84,7 @@ for j, size in enumerate(sizes):
     q = axs[2][j].scatter(test[["x"]], prediction, c="blue")
     axs[2][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     r2 = round(r2_score(test[["y"]], prediction), 4)
-    axs[2][j].set_title(f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,3,3,1]}")
+    axs[2][j].set_title(
+        f"R-squared score: {r2}, \nfor {size} obs \nand network {[1,3,3,1]}"
+    )
 plt.show()

@@ -12,6 +12,7 @@ datasets = ["data.circles", "data.XOR", "data.noisyXOR"]
 sizes = [100, 500, 1000, 10000]
 N = 100
 fig, axs = plt.subplots(3, 4, figsize=(12, 8))
+fig.tight_layout(pad=5.0)
 for j, size in enumerate(sizes):
     data = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.train.{size}.csv"))
     data_test = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.test.{size}.csv"))
@@ -38,7 +39,7 @@ for j, size in enumerate(sizes):
         sum((y_pred + 1) == data_test["cls"]) / len(y_pred),
     )
     axs[0][j].set_title(
-        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%'
+        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%, \nsize: {size}, \nnetwork: {[2, 4, 8, cls.shape[1]]}'
     )
 for j, size in enumerate(sizes):
     data = pd.read_csv(os.path.join(PATH, f"{datasets[1]}.train.{size}.csv"))
@@ -65,7 +66,7 @@ for j, size in enumerate(sizes):
         sum((y_pred + 1) == data_test["cls"]) / len(y_pred),
     )
     axs[1][j].set_title(
-        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%'
+        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%, \nsize: {size}, \nnetwork: {[2, 8, cls.shape[1]]}'
     )
 
 for j, size in enumerate(sizes):
@@ -93,6 +94,6 @@ for j, size in enumerate(sizes):
         sum((y_pred + 1) == data_test["cls"]) / len(y_pred),
     )
     axs[2][j].set_title(
-        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%'
+        f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%, \nsize: {size}, \nnetwork: {[2, 8, cls.shape[1]]}'
     )
 plt.show()

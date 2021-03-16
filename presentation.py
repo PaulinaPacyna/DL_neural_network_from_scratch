@@ -32,6 +32,7 @@ for j, size in enumerate(sizes):
     axs[0][j].scatter(mesh[:, 0], mesh[:, 1], s=0.5, c=pred_mesh)
     axs[0][j].scatter(data.x, data.y, c=data.cls, cmap="ocean", s=2)
     print(f"Accuracy of {datasets[0]} with {size} obs: ", sum((y_pred+1) == data_test["cls"])/len(y_pred))
+    axs[0][j].set_title(f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%')
 for j, size in enumerate(sizes):
     data = pd.read_csv(os.path.join(PATH, f"{datasets[1]}.train.{size}.csv"))
     data_test = pd.read_csv(os.path.join(PATH, f"{datasets[1]}.test.{size}.csv"))
@@ -51,6 +52,7 @@ for j, size in enumerate(sizes):
     axs[1][j].scatter(mesh[:, 0], mesh[:, 1], s=0.5, c=pred_mesh)
     axs[1][j].scatter(data.x, data.y, c=data.cls, cmap="ocean", s=2)
     print(f"Accuracy of {datasets[1]} with {size} obs: ", sum((y_pred+1) == data_test["cls"])/len(y_pred))
+    axs[1][j].set_title(f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%')
 
 for j, size in enumerate(sizes):
     data = pd.read_csv(os.path.join(PATH, f"{datasets[2]}.train.{size}.csv"))
@@ -71,4 +73,5 @@ for j, size in enumerate(sizes):
     axs[2][j].scatter(mesh[:, 0], mesh[:, 1], s=0.5, c=pred_mesh)
     axs[2][j].scatter(data.x, data.y, c=data.cls, cmap="ocean", s=2)
     print(f"Accuracy of {datasets[2]} with {size} obs: ", sum((y_pred + 1) == data_test["cls"]) / len(y_pred))
+    axs[2][j].set_title(f'Accuracy: {round(sum((y_pred + 1) == data_test["cls"]) / len(y_pred)*100,1)}%')
 plt.show()

@@ -10,6 +10,7 @@ datasets = ["data.activation", "data.cube"]
 sizes = [100, 500, 1000, 10000]
 N = 100
 fig, axs = plt.subplots(2, len(sizes), figsize=(12, 8))
+fig.tight_layout(pad=6.0)
 for j, size in enumerate(sizes):
     train = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.train.{size}.csv"))
     test = pd.read_csv(os.path.join(PATH, f"{datasets[0]}.test.{size}.csv"))
@@ -36,7 +37,7 @@ for j, size in enumerate(sizes):
     axs[0][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     score = r2_score(test[["y"]], prediction)
     axs[0][j].set_title(
-        f"Network architecture: {[1, 2, 2, 1]}, size: {size } r2 score: {score}",
+        f"Network: {[1, 2, 2, 1]}, \nsize: {size } \nr2 score: {score}",
     )
 
 for j, size in enumerate(sizes):
@@ -61,7 +62,7 @@ for j, size in enumerate(sizes):
     axs[1][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     score = r2_score(test[["y"]], prediction)
     axs[1][j].set_title(
-        f"Network architecture: {[1, 3, 3, 1]}, size: { size} r2 score:{score}"
+        f"Network: {[1, 3, 3, 1]}, \nsize: { size} \nr2 score:{score}"
     )
 
 

@@ -37,7 +37,6 @@ for j, size in enumerate(sizes):
     score = r2_score(test[["y"]], prediction)
     axs[0][j].set_title(
         f"Network architecture: {[1, 2, 2, 1]}, size: {size } r2 score: {score}",
-
     )
 
 for j, size in enumerate(sizes):
@@ -61,7 +60,7 @@ for j, size in enumerate(sizes):
     q = axs[1][j].scatter(test[["x"]], prediction, c="blue")
     axs[1][j].legend([p, r, q], ["Test data", "Training data", "Prediction data"])
     score = r2_score(test[["y"]], prediction)
-    axs[0][j].set_title(
+    axs[1][j].set_title(
         f"Network architecture: {[1, 3, 3, 1]}, size: { size} r2 score:{score}"
     )
 

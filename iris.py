@@ -18,12 +18,13 @@ N = Network(
 )  # best without hidden layers - iris dataset is too small
 N.train(X_train, y_train)
 pred = N.fit(X_test)
-print(np.argmax(pred, axis=1).reshape((-1,)))
-print(np.argmax(np.array(y_test), axis=1).reshape((-1,)))
+print("Prediction: ", np.argmax(pred, axis=1).reshape((-1,)))
+print("True :", np.argmax(np.array(y_test), axis=1).reshape((-1,)))
 print(
+    "Accuracy :",
     np.mean(
         np.argmax(pred, axis=1).reshape((-1)) == np.argmax(y_test, axis=1).reshape((-1))
-    )
+    ),
 )
 
 

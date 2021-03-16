@@ -111,8 +111,9 @@ class Network:
         else:
             self.layers = [
                 Layer(layers[i], layers[i + 1], **layers_kwargs)
-                for i in range(len(layers) - 1)
+                for i in range(len(layers) - 2)
             ]
+            self.layers.append(Layer(layers[-2], layers[-1], "sigmoid" if activation_type == "relu" else activation_type, init_sigma))
 
     def train(self, X, Y):
         X = np.array(X)

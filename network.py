@@ -12,7 +12,7 @@ class Layer:
         n_output: int,
         activation_type: str = "sigmoid",
         init_sigma=1,
-            bias_present=True
+        bias_present=True,
     ):
         self.weights = np.random.normal(0, init_sigma, n_output * n_input).reshape(
             (n_input, n_output)
@@ -79,7 +79,7 @@ class Network:
         batch_size=10,
         print_progress=False,
         regression=False,
-            bias_present=True
+        bias_present=True,
     ):
         self.cost_fun = cost_fun
         self.learning_rate = learning_rate
@@ -90,7 +90,11 @@ class Network:
         self.regression = regression
         self.x_min, self.x_maxmin = np.zeros(layers[0]), np.ones(layers[0])
         self.y_min, self.y_maxmin = 0, 1
-        layers_kwargs = {"activation_type": activation_type, "init_sigma": init_sigma, 'bias_present': bias_present}
+        layers_kwargs = {
+            "activation_type": activation_type,
+            "init_sigma": init_sigma,
+            "bias_present": bias_present,
+        }
         try:
             if (
                 len(layers) < 2
@@ -113,7 +117,14 @@ class Network:
                 Layer(layers[i], layers[i + 1], **layers_kwargs)
                 for i in range(len(layers) - 2)
             ]
-            self.layers.append(Layer(layers[-2], layers[-1], "sigmoid" if activation_type == "relu" else activation_type, init_sigma))
+            self.layers.append(
+                Layer(
+                    layers[-2],
+                    layers[-1],
+                    "sigmoid" if activation_type == "relu" else activation_type,
+                    init_sigma,
+                )
+            )
 
     def train(self, X, Y):
         X = np.array(X)
@@ -141,9 +152,7 @@ class Network:
                 y = y_batches[n_batch]
                 prediction = self.fit(x)
                 # computing delta in last layer using standard chain rule
-                self.layers[-1].set_delta(
-                    self.delta(prediction, y)
-                )
+                self.layers[-1].set_delta(self.delta(prediction, y))
                 # going back to front starting from last hidden layer
                 for n_layer in range(len(self.layers) - 2, -1, -1):
                     error = np.matmul(
@@ -186,7 +195,7 @@ class Network:
                     print(f"Epoch: {e}/{self.n_epochs}")
 
     def fit(self, X, predict=False):
-        y = (X-self.x_min)/self.x_maxmin if predict else copy(X)
+        y = (X - self.x_min) / self.x_maxmin if predict else copy(X)
         for layer in self.layers:
             y = layer.fit(y)
         if predict:
@@ -196,7 +205,9 @@ class Network:
     def scale_x(self, X):
         self.x_min = X.min(axis=0)
         self.x_maxmin = X.ptp(axis=0)  # max-min
-        return np.apply_along_axis(lambda x: (x-self.x_min) / self.x_maxmin, axis=1, arr=X)
+        return np.apply_along_axis(
+            lambda x: (x - self.x_min) / self.x_maxmin, axis=1, arr=X
+        )
 
     def scale_y(self, Y):
         self.y_min = min(Y)
@@ -204,20 +215,26 @@ class Network:
         return (Y - self.y_min) / self.y_maxmin
 
     def rescale_x(self, X):
-        return np.apply_along_axis(lambda x: x * self.x_maxmin + self.x_min, axis=1, arr=X)
+        return np.apply_along_axis(
+            lambda x: x * self.x_maxmin + self.x_min, axis=1, arr=X
+        )
 
     def rescale_y(self, Y):
         return Y * self.y_maxmin + self.y_min
 
     def delta(self, a, y):
         if self.cost_fun == "quadratic":
-            return np.array(a-y) * self.activation_derivative(self.layers[-1], a)
+            return np.array(a - y) * self.activation_derivative(self.layers[-1], a)
         elif self.cost_fun == "cross-entropy":
-            return np.array(a-y)
+            return np.array(a - y)
         elif self.cost_fun == "hellinger":
             if self.layers[-1].activation_type != "sigmoid":
-                raise ValueError("Hellinger cost function works only with (0,1) values of activation!")
-            return ((np.sqrt(a) - np.sqrt(y))/(np.sqrt(2)*np.sqrt(a))) * self.activation_derivative(self.layers[-1], a)
+                raise ValueError(
+                    "Hellinger cost function works only with (0,1) values of activation!"
+                )
+            return (
+                (np.sqrt(a) - np.sqrt(y)) / (np.sqrt(2) * np.sqrt(a))
+            ) * self.activation_derivative(self.layers[-1], a)
         else:
             raise ValueError("No such cost function!")
 

@@ -1,4 +1,5 @@
 from copy import copy
+from functools import reduce
 
 import numpy as np
 
@@ -13,6 +14,7 @@ class Layer:
         activation_type: str = "sigmoid",
         init_sigma=1,
         bias_present=True,
+        stopping_rate=0.0001,
     ):
         self.weights = np.random.normal(0, init_sigma, n_output * n_input).reshape(
             (n_input, n_output)
@@ -25,6 +27,8 @@ class Layer:
         self.momentum_bias = np.zeros(self.bias.shape)
         self.outputs = np.zeros(n_output)
         self.bias_present = bias_present
+        self.stop = False
+        self.stopping_rate = stopping_rate
 
     def update_weights(self, W, learning_rate, momentum_rate):
         change = (
@@ -32,6 +36,8 @@ class Layer:
             + momentum_rate * self.momentum
         )
         self.weights = self.weights - change
+        if np.sum((self.momentum - change) ** 2) < self.stopping_rate:
+            self.stop = True
         self.momentum = change
 
     def update_bias(self, b, learning_rate, momentum_rate):
@@ -80,6 +86,7 @@ class Network:
         print_progress=False,
         regression=False,
         bias_present=True,
+        stopping_rate=1e-4,
     ):
         self.cost_fun = cost_fun
         self.learning_rate = learning_rate
@@ -90,10 +97,12 @@ class Network:
         self.regression = regression
         self.x_min, self.x_maxmin = np.zeros(layers[0]), np.ones(layers[0])
         self.y_min, self.y_maxmin = 0, 1
+
         layers_kwargs = {
             "activation_type": activation_type,
             "init_sigma": init_sigma,
             "bias_present": bias_present,
+            "stopping_rate": stopping_rate,
         }
         try:
             if (
@@ -190,6 +199,9 @@ class Network:
                         self.learning_rate,
                         self.momentum_rate,
                     )
+            if reduce(lambda all_, layer: all_ and layer.stop, self.layers):
+                # if all layers indicate that algorithm should stop
+                return
             if self.print_progress:
                 if e % 1000 == 0:
                     print(f"Epoch: {e}/{self.n_epochs}")

@@ -36,7 +36,7 @@ class Layer:
             + momentum_rate * self.momentum
         )
         self.weights = self.weights - change
-        if np.sum((self.momentum - change) ** 2) < self.stopping_rate:
+        if np.mean((self.momentum - change) ** 2) < self.stopping_rate:
             self.stop = True
         self.momentum = change
 
@@ -203,7 +203,7 @@ class Network:
                 # if all layers indicate that algorithm should stop
                 return
             if self.print_progress:
-                if e % 1000 == 0:
+                if e % (self.n_epochs//10) == 0:
                     print(f"Epoch: {e}/{self.n_epochs}")
 
     def fit(self, X, predict=False):

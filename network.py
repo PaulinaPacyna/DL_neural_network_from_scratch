@@ -14,7 +14,7 @@ class Layer:
         activation_type: str = "sigmoid",
         init_sigma=1,
         bias_present=True,
-        stopping_rate=0.0001,
+        stopping_rate=1e-14,
     ):
         self.weights = np.random.normal(0, init_sigma, n_output * n_input).reshape(
             (n_input, n_output)

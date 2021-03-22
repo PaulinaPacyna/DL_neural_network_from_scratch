@@ -203,7 +203,7 @@ class Network:
                 # if all layers indicate that algorithm should stop
                 return
             if self.print_progress:
-                if e % (self.n_epochs//10) == 0:
+                if e % (self.n_epochs//100) == 0:
                     print(f"Epoch: {e}/{self.n_epochs}")
 
     def fit(self, X, predict=False):
